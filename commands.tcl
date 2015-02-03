@@ -1,0 +1,5 @@
+proc setDevice {} {
+}
+
+proc helpAbout {} {
+}

@@ -1,7 +1,3 @@
-#! /bin/env tclsh
-
-package require Tk
-
 # --------------------------
 #   params
 # --------------------------
@@ -49,7 +45,7 @@ bind .c <Configure> {
             set vv [expr $params(plot)]
             set v [expr {int($vv * $h3) + $h1}]
             if {abs($vv) < $params(accuracy)} \
-            { 
+            {
                 .c create text $t 0 -anchor n -text $t -fill gray
                 .c create line $t 0 $t $h -fill gray
             }
