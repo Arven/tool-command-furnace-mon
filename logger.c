@@ -10,19 +10,17 @@
 FILE* hours;
 
 int mday = -1;
-int second = 0;
-int minute = 0;
-int hour = 0;
+float minute = 0;
 
 void
 start_a_new_day()
 {
-    second = minute = hour = 0;
+    minute = 0;
     char strbuf[500];
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
     mday = tm.tm_mday;
-    snprintf(strbuf, sizeof(strbuf), "data/%d-%d-%d.dat", tm.tm_year + 1900, tm.tm_mon, tm.tm_mday);
+    snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.dat", tm.tm_year + 1900, tm.tm_mon, tm.tm_mday);
     hours = fopen(strbuf, "a");
 }
 
@@ -110,28 +108,25 @@ set_blocking (fd, 1);                    // set no blocking
 
 char buf;
 
-int n = read (fd, &buf, 1);            // read up to 100 characters if ready to read
 while ( 1 ) {
   start_a_new_day();
-  for (int k = 0; k <= 24; k++) {        // hours
-    for (int j = 0; j <= 60; j++) {      // minutes
-      for (int i = 0; i <= 60; i++) {    // seconds
-        minute += buf;
-        printf("SECOND TOTAL: %d", minute);
-      }
-      minute = minute / 60;
-      hour += minute;
-      minute = 0;
-      printf("MINUTE TOTAL: %d", hour);
+  for (int j = 0; j <= 60; j++) {      // minutes
+    for (int i = 0; i <= 60; i++) {    // seconds
+      int n = read(fd, &buf, 1);
+      minute += buf - 'A';
+      printf("MINUTE TOTAL: %f\n", minute);
       if(is_a_new_day()) {
-          start_a_new_day();
+        start_a_new_day();
+        goto dawn;
       }
     }
-    hour = hour / 60;
-    fprintf(hours, "%d\n", hour);
-    fflush(hours);
-    hour = 0;
+    minute = minute / (float) 36;
+    printf("HOUR TOTAL: %f\n", minute);
+    fprintf(hours, "%f\n", minute);
+    minute = 0;
   }
+  dawn:
+  fflush(hours);
   fclose(hours);
 }
 
