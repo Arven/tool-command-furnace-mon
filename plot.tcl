@@ -10,37 +10,37 @@ bind . <Destroy> { exit }
 pack .c
 
 proc plot { datafile } {
-puts $datafile
-if ![ file exists $datafile ] {
-return
-}
+    puts $datafile
+    if ![ file exists $datafile ] {
+        return
+    }
 
-global params
+    global params
 
-.c delete all
+    .c delete all
 
-set fp [open $datafile r]
-set yvals [read $fp]
-close $fp
+    set fp [open $datafile r]
+    set yvals [read $fp]
+    close $fp
 
-set delt [ expr double($params(width)) / ( [ llength $yvals ] - 1 ) ]
+    set delt [ expr double($params(width)) / ( [ llength $yvals ] - 1 ) ]
 
-set stretchy [ expr $params(height) / double($params(yscale)) ]
+    set stretchy [ expr $params(height) / double($params(yscale)) ]
 
-set prevy 0
-set prevt 0
-set t 0
+    set prevy 0
+    set prevt 0
+    set t 0
 
-for { set i 0 } { $i < 70 } { incr i $params(step) } {
-    .c create line 0 [ expr $i * $stretchy ] $params(width) [ expr $i * $stretchy ] -fill gray
-}
+    for { set i 0 } { $i < 70 } { incr i $params(step) } {
+        .c create line 0 [ expr $i * $stretchy ] $params(width) [ expr $i * $stretchy ] -fill gray
+    }
 
-foreach { yval } $yvals {
-    set yval [ expr (($params(yscale) - $yval * $stretchy) + $params(height) - 70) ]
-    .c create line $prevt $prevy $t $yval -fill white
-    set prevt $t
-    set prevy $yval
-    set t [expr $t + $delt]
-}
+    foreach { yval } $yvals {
+        set yval [ expr (($params(yscale) - $yval * $stretchy) + $params(height) - 70) ]
+        .c create line $prevt $prevy $t $yval -fill white
+        set prevt $t
+        set prevy $yval
+        set t [expr $t + $delt]
+    }
 
 }
