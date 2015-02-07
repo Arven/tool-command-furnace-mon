@@ -110,8 +110,8 @@ char buf;
 
 while ( 1 ) {
   start_a_new_day();
-  for (int j = 0; j <= 60; j++) {      // minutes
-    for (int i = 0; i <= 60; i++) {    // seconds
+  for (int j = 0; j <= 23; j++) {      // minutes
+    for (int i = 0; i <= 59; i++) {    // seconds
       int n = read(fd, &buf, 1);
       minute += buf - 'A';
       printf("MINUTE TOTAL: %f\n", minute);
