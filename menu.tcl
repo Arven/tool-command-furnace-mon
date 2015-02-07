@@ -5,7 +5,7 @@ menu .menu
 . configure -menu .menu
 
 menu .file
-.file add command -label "Device" -command "setDevice"
+# .file add command -label "Device" -command "setDevice"
 .file add command -label "Exit" -command "exit"
 
 menu .help

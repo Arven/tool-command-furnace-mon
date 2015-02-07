@@ -4,7 +4,7 @@ frame .o
 # scale .o.scale -orient horizontal -length 350 -from 1.0 -to 100.0 -variable timespan
 
 label .o.offsetLbl -text "Days Ago"
-scale .o.offset -orient horizontal -length 350 -from 0.0 -to 100.0 -variable offset -command { getoffset }
+scale .o.offset -orient horizontal -length 350 -from 100.0 -to 0.0 -variable offset -command { getoffset }
 
 label .o.currentRateLbl -text "Hourly Avg (GPH)"
 label .o.currentRate -textvar hourlyAverage
@@ -39,4 +39,4 @@ proc getoffset { { offset 0 } } {
     plot $date
 }
 
-.o.offset configure -to [ eval maxoffset ]
+.o.offset configure -from [ eval maxoffset ]

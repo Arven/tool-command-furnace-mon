@@ -9,14 +9,30 @@
 
 FILE* hours;
 
+int mday = -1;
+int second = 0;
+int minute = 0;
+int hour = 0;
+
 void
 start_a_new_day()
+{
+    second = minute = hour = 0;
+    char strbuf[500];
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    mday = tm.tm_mday;
+    snprintf(strbuf, sizeof(strbuf), "data/%d-%d-%d.dat", tm.tm_year + 1900, tm.tm_mon, tm.tm_mday);
+    hours = fopen(strbuf, "a");
+}
+
+int
+is_a_new_day()
 {
     char strbuf[500];
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-    snprintf(strbuf, sizeof(strbuf), "data/%d-%d-%d.dat", tm.tm_year + 1900, tm.tm_mon, tm.tm_mday);
-    hours = fopen(strbuf, "a");
+    return mday != tm.tm_mday;
 }
 
 int
@@ -93,9 +109,6 @@ set_interface_attribs (fd, B115200, 0);  // set speed to 115,200 bps, 8n1 (no pa
 set_blocking (fd, 1);                    // set no blocking
 
 char buf;
-int second;
-int minute;
-int hour;
 
 int n = read (fd, &buf, 1);            // read up to 100 characters if ready to read
 while ( 1 ) {
@@ -110,6 +123,9 @@ while ( 1 ) {
       hour += minute;
       minute = 0;
       printf("MINUTE TOTAL: %d", hour);
+      if(is_a_new_day()) {
+          start_a_new_day();
+      }
     }
     hour = hour / 60;
     fprintf(hours, "%d\n", hour);

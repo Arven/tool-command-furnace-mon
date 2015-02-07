@@ -20,11 +20,11 @@ PUB main
   total    := 0
   ser.Start(115200)             '' Start the serial terminal  
   repeat
-    repeat until ticks > 60
+    repeat until ticks > 59
       outa[16] := ina[8]          '' Write the input to one LED
       total := total + ina[8]
       ticks := ticks + 1
       waitcnt (clkfreq + cnt)     '' Wait 1 second
-    ser.Bin(total, 1)
+    ser.Char(total + "A")
     ticks := 0
     total := 0
