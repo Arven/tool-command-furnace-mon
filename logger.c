@@ -20,7 +20,7 @@ start_a_new_day()
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
     mday = tm.tm_mday;
-    snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.dat", tm.tm_year + 1900, tm.tm_mon, tm.tm_mday);
+    snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
     hours = fopen(strbuf, "a");
 }
 

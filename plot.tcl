@@ -10,6 +10,7 @@ bind . <Destroy> { exit }
 pack .c
 
 proc plot { datafile } {
+puts $datafile
 if ![ file exists $datafile ] {
 return
 }
