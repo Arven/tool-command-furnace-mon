@@ -5,16 +5,26 @@ array set params {
     step      10
 }
 
-set fp [open "list.dat" r]
+canvas .c -width $params(width) -height $params(height) -xscrollincrement 1 -bg black
+bind . <Destroy> { exit }
+pack .c
+
+proc plot { datafile } {
+if ![ file exists $datafile ] {
+return
+}
+
+global params
+
+.c delete all
+
+set fp [open $datafile r]
 set yvals [read $fp]
 close $fp
 
 set delt [ expr double($params(width)) / ( [ llength $yvals ] - 1 ) ]
 
 set stretchy [ expr $params(height) / double($params(yscale)) ]
-
-canvas .c -width $params(width) -height $params(height) -xscrollincrement 1 -bg black
-bind . <Destroy> { exit }
 
 set prevy 0
 set prevt 0
@@ -32,4 +42,4 @@ foreach { yval } $yvals {
     set t [expr $t + $delt]
 }
 
-pack .c
+}
