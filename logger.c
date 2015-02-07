@@ -113,6 +113,10 @@ while ( 1 ) {
   for (int j = 0; j <= 23; j++) {      // minutes
     for (int i = 0; i <= 59; i++) {    // seconds
       int n = read(fd, &buf, 1);
+      if (n < 0) {
+          perror("stream closed abruptly");
+          return;
+      }
       minute += buf - 'A';
       printf("MINUTE TOTAL: %f\n", minute);
       if(is_a_new_day()) {
