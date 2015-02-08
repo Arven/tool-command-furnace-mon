@@ -1,23 +1,20 @@
 array set params {
     width    500
     height   200
-    yscale    70
+    yscale   100
     step      10
 }
 
-canvas .c -width $params(width) -height $params(height) -xscrollincrement 1 -bg black
 bind . <Destroy> { exit }
-pack .c
 
 proc plot { datafile } {
-    puts $datafile
     if ![ file exists $datafile ] {
         return
     }
 
     global params
 
-    .c delete all
+    .o.c delete all
 
     set fp [open $datafile r]
     set yvals [read $fp]
@@ -31,13 +28,13 @@ proc plot { datafile } {
     set prevt 0
     set t 0
 
-    for { set i 0 } { $i < 70 } { incr i $params(step) } {
-        .c create line 0 [ expr $i * $stretchy ] $params(width) [ expr $i * $stretchy ] -fill gray
+    for { set i 0 } { $i < $params(yscale) } { incr i $params(step) } {
+        .o.c create line 0 [ expr $i * $stretchy ] $params(width) [ expr $i * $stretchy ] -fill gray
     }
 
     foreach { yval } $yvals {
-        set yval [ expr (($params(yscale) - $yval * $stretchy) + $params(height) - 70) ]
-        .c create line $prevt $prevy $t $yval -fill white
+        set yval [ expr (($params(yscale) - $yval * $stretchy) + $params(height) - $params(yscale)) ]
+        .o.c create line $prevt $prevy $t $yval -fill white
         set prevt $t
         set prevy $yval
         set t [expr $t + $delt]
