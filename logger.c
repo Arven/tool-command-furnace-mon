@@ -8,6 +8,7 @@
 #include <termios.h>
 
 FILE* hours;
+FILE* minutes;
 
 int mday = -1;
 float minute = 0;
@@ -22,6 +23,8 @@ start_a_new_day()
     mday = tm.tm_mday;
     snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
     hours = fopen(strbuf, "a");
+    snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+    minutes = fopen(strbuf, "a");
 }
 
 int
@@ -119,6 +122,10 @@ while ( 1 ) {
       }
       minute += buf - 'A';
       printf("MINUTE TOTAL: %f\n", minute);
+      time_t t = time(NULL);
+      struct tm tm = *localtime(&t);
+      fprintf(minutes, "%d-%d %f\n", tm.tm_hour, tm.tm_min, minute);
+      fflush(minutes);
       if(is_a_new_day()) {
         start_a_new_day();
         goto dawn;
@@ -129,10 +136,11 @@ while ( 1 ) {
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
     fprintf(hours, "%d %f\n", tm.tm_hour, minute);
+    fflush(hours);
     minute = 0;
   }
   dawn:
-  fflush(hours);
+  fclose(minutes);
   fclose(hours);
 }
 
