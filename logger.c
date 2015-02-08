@@ -124,7 +124,7 @@ while ( 1 ) {
       printf("MINUTE TOTAL: %f\n", minute);
       time_t t = time(NULL);
       struct tm tm = *localtime(&t);
-      fprintf(minutes, "%d-%d %f\n", tm.tm_hour, tm.tm_min, minute);
+      fprintf(minutes, "%d:%d %f\n", tm.tm_hour, tm.tm_min, minute);
       fflush(minutes);
       if(is_a_new_day()) {
         start_a_new_day();
