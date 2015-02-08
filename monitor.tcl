@@ -7,3 +7,5 @@ source commands.tcl
 source menu.tcl
 source plot.tcl
 source options.tcl
+
+render $offset

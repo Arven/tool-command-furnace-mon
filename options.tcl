@@ -47,7 +47,6 @@ proc render { { offset 0 } } {
 
 bind .o.c <Configure> {
     array set params [ list width %w height %h ]
-    render $offset
 }
 
 bind .o.offset <ButtonRelease-1> { render $offset }

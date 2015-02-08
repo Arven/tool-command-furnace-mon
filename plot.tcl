@@ -32,12 +32,12 @@ proc plot { datafile } {
         .o.c create line 0 [ expr $i * $stretchy ] $params(width) [ expr $i * $stretchy ] -fill gray
     }
 
-    foreach { yval } $yvals {
+    foreach { ytime yval } $yvals {
+        set t [expr $ytime * $delt * 2]
         set yval [ expr (($params(yscale) - $yval * $stretchy) + $params(height) - $params(yscale)) ]
         .o.c create line $prevt $prevy $t $yval -fill white
         set prevt $t
         set prevy $yval
-        set t [expr $t + $delt]
     }
 
 }

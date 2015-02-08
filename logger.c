@@ -126,7 +126,9 @@ while ( 1 ) {
     }
     minute = minute / (float) 36;
     printf("HOUR TOTAL: %f\n", minute);
-    fprintf(hours, "%f\n", minute);
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    fprintf(hours, "%d %f\n", tm.tm_hour, minute);
     minute = 0;
   }
   dawn:
