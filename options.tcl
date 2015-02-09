@@ -7,20 +7,20 @@ canvas .o.c -width $params(width) -height $params(height) -xscrollincrement 1 -b
 label .o.offsetLbl -text "Days Ago"
 scale .o.offset -orient horizontal -length 200 -from 100.0 -to 0.0 -variable offset
 
-#label .o.currentRateLbl -text "Hourly % Run"
-#label .o.currentRate -textvar hourlyAverage
+label .o.currentRateLbl -text "Average This Hour (Runtime)"
+label .o.currentRate -textvar hourlyAverage
 
-label .o.gphLbl -text "GPH"
-entry .o.gph -textvariable gph
+label .o.gphLbl -text "Nozzle GPH"
+entry .o.gph -textvariable gph -bg white
 
-label .o.currentRateGPHLbl -text "Hourly GPH"
+label .o.currentRateGPHLbl -text "This Hour (Gallons)"
 label .o.currentRateGPH -textvar hourlyAverageGPH
 
 grid .o.c -column 0 -row 0 -columnspan 2 -sticky nsew
 grid .o.offsetLbl -column 0 -row 1
 grid .o.offset -column 1 -row 1
-#grid .o.currentRateLbl -column 0 -row 2
-#grid .o.currentRate -column 1 -row 2
+grid .o.currentRateLbl -column 0 -row 2
+grid .o.currentRate -column 1 -row 2
 grid .o.gphLbl -column 0 -row 3
 grid .o.gph -column 1 -row 3
 grid .o.currentRateGPHLbl -column 0 -row 4
