@@ -20,7 +20,7 @@ proc plot { datafile } {
     set yvals [read $fp]
     close $fp
 
-    set delt [ expr $params(width) / 24 ]
+    set delt [ expr ($params(width) / 23) + 0.75]
 
     set stretchy [ expr $params(height) / double($params(yscale)) ]
 
@@ -33,7 +33,7 @@ proc plot { datafile } {
     }
 
     foreach { ytime yval } $yvals {
-        set t [expr ($ytime + 2) * $delt]
+        set t [expr $ytime * $delt]
         set yval [ expr (($params(yscale) - $yval * $stretchy) + $params(height) - $params(yscale)) ]
         .o.c create line $prevt $prevy $t $yval -fill white
         set prevt $t
