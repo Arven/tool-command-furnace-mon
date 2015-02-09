@@ -7,14 +7,24 @@ canvas .o.c -width $params(width) -height $params(height) -xscrollincrement 1 -b
 label .o.offsetLbl -text "Days Ago"
 scale .o.offset -orient horizontal -length 200 -from 100.0 -to 0.0 -variable offset
 
-label .o.currentRateLbl -text "Hourly Avg (GPH)"
-label .o.currentRate -textvar hourlyAverage
+#label .o.currentRateLbl -text "Hourly % Run"
+#label .o.currentRate -textvar hourlyAverage
+
+label .o.gphLbl -text "GPH"
+entry .o.gph -textvariable gph
+
+label .o.currentRateGPHLbl -text "Hourly GPH"
+label .o.currentRateGPH -textvar hourlyAverageGPH
 
 grid .o.c -column 0 -row 0 -columnspan 2 -sticky nsew
 grid .o.offsetLbl -column 0 -row 1
 grid .o.offset -column 1 -row 1
-grid .o.currentRateLbl -column 0 -row 2
-grid .o.currentRate -column 1 -row 2
+#grid .o.currentRateLbl -column 0 -row 2
+#grid .o.currentRate -column 1 -row 2
+grid .o.gphLbl -column 0 -row 3
+grid .o.gph -column 1 -row 3
+grid .o.currentRateGPHLbl -column 0 -row 4
+grid .o.currentRateGPH -column 1 -row 4
 
 grid columnconfigure .o 0 -weight 1
 grid rowconfigure .o 0 -weight 1
@@ -22,8 +32,13 @@ grid columnconfigure .o 1 -weight 1
 
 pack .o -expand yes -fill both
 
+button .b -text "Refresh" -command { refresh }
+pack .b
+
 set timespan 1.0
-set hourlyAverage 0.450
+set hourlyAverage 404
+set hourlyAverageGPH 404
+set gph 0.85
 
 proc maxoffset {} {
     set now [ clock seconds ]
@@ -41,6 +56,30 @@ proc render { { offset 0 } } {
     set back [ expr $offset * 86400 ]
     set date [ clock format [ expr $now - $back ] -format data/%Y-%m-%d.dat ]
     plot $date
+}
+
+proc refresh {} {
+    global offset
+    global hourlyAverage
+    global hourlyAverageGPH
+    global gph
+    set now [ clock seconds ]
+    set datafile [ clock format [ expr $now ] -format data/%Y-%m-%d.minutes.dat ]
+    set current_hour [ clock format [ expr $now ] -format %H ]
+    set fp [open $datafile r]
+    set seconds [read $fp]
+    set total_seconds 0
+    set number_mins 0
+    close $fp
+    foreach { hour minute seconds } $seconds {
+        if [ expr $hour == $current_hour ] {
+            set total_seconds [ expr $total_seconds + $seconds ]
+            incr number_mins
+        }
+    }
+    set hourlyAverage [ expr $total_seconds / $number_mins ]
+    set hourlyAverageGPH [ expr $hourlyAverage * $gph ]
+    render $offset
 }
 
 .o.offset configure -from [ eval maxoffset ]
