@@ -10,32 +10,6 @@
 FILE* hours;
 FILE* minutes;
 
-int mday = -1;
-float minute = 0;
-
-void
-start_a_new_day()
-{
-    minute = 0;
-    char strbuf[500];
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
-    mday = tm.tm_mday;
-    snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
-    hours = fopen(strbuf, "a");
-    snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
-    minutes = fopen(strbuf, "a");
-}
-
-int
-is_a_new_day()
-{
-    char strbuf[500];
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
-    return mday != tm.tm_mday;
-}
-
 int
 set_interface_attribs (int fd, int speed, int parity)
 {
@@ -107,21 +81,77 @@ if (fd < 0)
 }
 
 set_interface_attribs (fd, B115200, 0);  // set speed to 115,200 bps, 8n1 (no parity)
-set_blocking (fd, 1);                    // set no blocking
+set_blocking (fd, 1);                    // set blocking
+
+time_t t = time(NULL);
+struct tm tm = *localtime(&t);
+
+printf("BEGINNING LOGGING\n");
+printf("------------------------\n");
 
 char buf;
+char strbuf[500];
+int current_day = tm.tm_mday;
+int current_hour = tm.tm_hour;
+int number_minutes = 0;
+float minute = 0;
+float hour = 0;
+
+snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+hours = fopen(strbuf, "a");
+snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+minutes = fopen(strbuf, "a");
 
 while ( 1 ) {
+  time_t t = time(NULL);
+  struct tm tm = *localtime(&t);
+  if(current_hour != tm.tm_hour) {
+    hour = hour / (float) number_minutes;
+    printf("--- END LOGGING HOUR ---\n");
+    printf("HOUR TOTAL (MINUTES): %f\n", hour);
+    printf("------------------------\n");
+    fprintf(minutes, "%d %f\n", tm.tm_hour, hour);
+    fflush(minutes);
+    hour = 0;
+    number_minutes = 0;
+    current_hour = tm.tm_hour;
+    continue;
+  }
+  if(current_day != tm.tm_mday) {
+    fclose(minutes);
+    fclose(hours);
+    snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+    hours = fopen(strbuf, "a");
+    snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+    minutes = fopen(strbuf, "a");
+    current_day = tm.tm_mday;
+    continue;
+  }
+  int n = read(fd, &buf, 1);
+  if (n < 0) {
+      perror("stream closed abruptly");
+      return;
+  }
+  minute = buf - 'A';
+  hour += minute;
+  number_minutes++;
+  printf("SECONDS THIS MINUTE: %f\n", minute);
+  fprintf(minutes, "%d %d %f\n", tm.tm_hour, tm.tm_min, minute);
+  fflush(minutes);
+}
+
+/* while ( 1 ) {
   start_a_new_day();
-  for (int j = 0; j <= 23; j++) {      // minutes
-    for (int i = 0; i <= 59; i++) {    // seconds
+  for (int j = 0; j <= 23; j++) {      // hours
+    for (int i = 0; i <= 59; i++) {    // minutes
       int n = read(fd, &buf, 1);
       if (n < 0) {
           perror("stream closed abruptly");
           return;
       }
-      minute += buf - 'A';
-      printf("SECONDS THIS HOUR: %f\n", minute);
+      minute = buf - 'A';
+      hour += minute;
+      printf("SECONDS THIS MINUTE: %f\n", minute);
       time_t t = time(NULL);
       struct tm tm = *localtime(&t);
       fprintf(minutes, "%d %d %f\n", tm.tm_hour, tm.tm_min, minute);
@@ -131,19 +161,19 @@ while ( 1 ) {
         goto dawn;
       }
     }
-    minute = minute / (float) 60;
+    hour = hour / (float) 60;
     printf("--- END LOGGING HOUR ---\n");
-    printf("HOUR TOTAL (MINUTES): %f\n", minute);
+    printf("HOUR TOTAL (MINUTES): %f\n", hour);
     printf("------------------------\n");
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-    fprintf(hours, "%d %f\n", tm.tm_hour, minute);
+    fprintf(hours, "%d %f\n", tm.tm_hour, hour);
     fflush(hours);
-    minute = 0;
+    hour = 0;
   }
   dawn:
   fclose(minutes);
   fclose(hours);
-}
+} */
 
 }
