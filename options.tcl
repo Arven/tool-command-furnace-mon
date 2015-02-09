@@ -41,9 +41,9 @@ button .b -text "Refresh" -command { refresh }
 pack .b
 
 set timespan 1.0
-set hourlyAverage 404
-set hourlyAverageGPH 404
-set dailyAverageGPH 404
+set hourlyAverage "None Logged"
+set hourlyAverageGPH "None Logged"
+set dailyAverageGPH "None Logged"
 set gph 0.85
 
 proc maxoffset {} {
@@ -76,35 +76,24 @@ proc refresh {} {
     set fp [open $datafile r]
     set seconds [read $fp]
     set total_seconds 0
+    set total_seconds_day 0
     set number_mins 0
+    set number_mins_day 0
     close $fp
-    foreach { hour minute seconds } $seconds {
+    foreach { hour minute secs } $seconds {
         if [ expr $hour == $current_hour ] {
-            set total_seconds $seconds
+            set total_seconds [ expr $total_seconds + $secs ]
             incr number_mins
         }
+        set total_seconds_day [ expr $total_seconds_day + $secs ]
+        incr number_mins_day
     }
     if [ expr $number_mins > 0 ] {
         set hourlyAverage [ expr $total_seconds / ($number_mins * 60) ]
         set hourlyAverageGPH [ expr $hourlyAverage * $gph]
-    } else {
-        set hourlyAverage "None Logged"
-        set hourlyAverageGPH "None Logged"
     }
-    set datafile [ clock format [ expr $now ] -format data/%Y-%m-%d.dat ]
-    set fp [open $datafile r]
-    set perday [read $fp]
-    close $fp
-    set total_minutes 0
-    set number_hours 0
-    foreach { hour mins } $perday {
-        set total_minutes $mins
-        incr number_hours
-    }
-    if [ expr $number_hours > 0 ] {
-        set dailyAverageGPH [ expr ($total_minutes / $number_hours / 60) * $gph ]
-    } else {
-        set dailyAverageGPH "None Logged"
+    if [ expr $number_mins_day > 0 ] {
+        set dailyAverageGPH [ expr ($total_seconds_day / ($number_mins_day * 60)) * $gph ]
     }
     render $offset
 }
