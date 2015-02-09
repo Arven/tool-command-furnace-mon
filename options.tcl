@@ -16,6 +16,9 @@ entry .o.gph -textvariable gph -bg white
 label .o.currentRateGPHLbl -text "Avg Gallons This Hour"
 label .o.currentRateGPH -textvar hourlyAverageGPH
 
+label .o.dailyRateGPHLbl -text "Avg Gallons This Day"
+label .o.dailyRateGPH -textvar dailyAverageGPH
+
 grid .o.c -column 0 -row 0 -columnspan 2 -sticky nsew
 grid .o.offsetLbl -column 0 -row 1
 grid .o.offset -column 1 -row 1
@@ -25,6 +28,8 @@ grid .o.gphLbl -column 0 -row 3
 grid .o.gph -column 1 -row 3
 grid .o.currentRateGPHLbl -column 0 -row 4
 grid .o.currentRateGPH -column 1 -row 4
+grid .o.dailyRateGPHLbl -column 0 -row 5
+grid .o.dailyRateGPH -column 1 -row 5
 
 grid columnconfigure .o 0 -weight 1
 grid rowconfigure .o 0 -weight 1
@@ -38,6 +43,7 @@ pack .b
 set timespan 1.0
 set hourlyAverage 404
 set hourlyAverageGPH 404
+set dailyAverageGPH 404
 set gph 0.85
 
 proc maxoffset {} {
@@ -62,6 +68,7 @@ proc refresh {} {
     global offset
     global hourlyAverage
     global hourlyAverageGPH
+    global dailyAverageGPH
     global gph
     set now [ clock seconds ]
     set datafile [ clock format [ expr $now ] -format data/%Y-%m-%d.minutes.dat ]
@@ -77,8 +84,28 @@ proc refresh {} {
             incr number_mins
         }
     }
-    set hourlyAverage [ expr $total_seconds / ($number_mins * 60) ]
-    set hourlyAverageGPH [ expr $hourlyAverage * $gph]
+    if [ expr $number_mins > 0 ] {
+        set hourlyAverage [ expr $total_seconds / ($number_mins * 60) ]
+        set hourlyAverageGPH [ expr $hourlyAverage * $gph]
+    } else {
+        set hourlyAverage "None Logged"
+        set hourlyAverageGPH "None Logged"
+    }
+    set datafile [ clock format [ expr $now ] -format data/%Y-%m-%d.dat ]
+    set fp [open $datafile r]
+    set perday [read $fp]
+    close $fp
+    set total_minutes 0
+    set number_hours 0
+    foreach { hour mins } $perday {
+        set total_minutes $mins
+        incr number_hours
+    }
+    if [ expr $number_hours > 0 ] {
+        set dailyAverageGPH [ expr ($total_minutes / $number_hours) * $gph ]
+    } else {
+        set dailyAverageGPH "None Logged"
+    }
     render $offset
 }
 
