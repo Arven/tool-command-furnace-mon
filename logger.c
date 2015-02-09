@@ -121,7 +121,7 @@ while ( 1 ) {
           return;
       }
       minute += buf - 'A';
-      printf("SECONDS THIS MINUTE: %f\n", minute);
+      printf("SECONDS THIS HOUR: %f\n", minute);
       time_t t = time(NULL);
       struct tm tm = *localtime(&t);
       fprintf(minutes, "%d %d %f\n", tm.tm_hour, tm.tm_min, minute);
@@ -132,7 +132,9 @@ while ( 1 ) {
       }
     }
     minute = minute / (float) 60;
-    printf("MINUTES THIS HOUR: %f\n", minute);
+    printf("--- END LOGGING HOUR ---\n");
+    printf("HOUR TOTAL (MINUTES): %f\n", minute);
+    printf("------------------------\n");
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
     fprintf(hours, "%d %f\n", tm.tm_hour, minute);

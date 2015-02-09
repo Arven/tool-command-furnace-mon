@@ -7,13 +7,13 @@ canvas .o.c -width $params(width) -height $params(height) -xscrollincrement 1 -b
 label .o.offsetLbl -text "Days Ago"
 scale .o.offset -orient horizontal -length 200 -from 100.0 -to 0.0 -variable offset
 
-label .o.currentRateLbl -text "Average This Hour (Runtime)"
+label .o.currentRateLbl -text "Average Percent Runtime"
 label .o.currentRate -textvar hourlyAverage
 
 label .o.gphLbl -text "Nozzle GPH"
 entry .o.gph -textvariable gph -bg white
 
-label .o.currentRateGPHLbl -text "This Hour (Gallons)"
+label .o.currentRateGPHLbl -text "Avg Gallons This Hour"
 label .o.currentRateGPH -textvar hourlyAverageGPH
 
 grid .o.c -column 0 -row 0 -columnspan 2 -sticky nsew
@@ -73,12 +73,12 @@ proc refresh {} {
     close $fp
     foreach { hour minute seconds } $seconds {
         if [ expr $hour == $current_hour ] {
-            set total_seconds [ expr $total_seconds + $seconds ]
+            set total_seconds $seconds
             incr number_mins
         }
     }
-    set hourlyAverage [ expr $total_seconds / $number_mins ]
-    set hourlyAverageGPH [ expr $hourlyAverage * $gph ]
+    set hourlyAverage [ expr $total_seconds / ($number_mins * 60) ]
+    set hourlyAverageGPH [ expr $hourlyAverage * $gph]
     render $offset
 }
 
