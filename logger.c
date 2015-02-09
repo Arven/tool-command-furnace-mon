@@ -103,8 +103,23 @@ snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year +
 minutes = fopen(strbuf, "a");
 
 while ( 1 ) {
+  int n = read(fd, &buf, 1);
+  if (n < 0) {
+      perror("stream closed abruptly");
+      return;
+  }
   time_t t = time(NULL);
   struct tm tm = *localtime(&t);
+  if(current_day != tm.tm_mday) {
+    printf("--- END LOGGING DAY  ---\n");
+    fclose(minutes);
+    fclose(hours);
+    snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+    hours = fopen(strbuf, "a");
+    snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+    minutes = fopen(strbuf, "a");
+    current_day = tm.tm_mday;
+  }
   if(current_hour != tm.tm_hour) {
     hour = hour / (float) number_minutes;
     printf("--- END LOGGING HOUR ---\n");
@@ -115,22 +130,6 @@ while ( 1 ) {
     hour = 0;
     number_minutes = 0;
     current_hour = tm.tm_hour;
-    continue;
-  }
-  if(current_day != tm.tm_mday) {
-    fclose(minutes);
-    fclose(hours);
-    snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
-    hours = fopen(strbuf, "a");
-    snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
-    minutes = fopen(strbuf, "a");
-    current_day = tm.tm_mday;
-    continue;
-  }
-  int n = read(fd, &buf, 1);
-  if (n < 0) {
-      perror("stream closed abruptly");
-      return;
   }
   minute = buf - 'A';
   hour += minute;
