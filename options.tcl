@@ -102,7 +102,7 @@ proc refresh {} {
         incr number_hours
     }
     if [ expr $number_hours > 0 ] {
-        set dailyAverageGPH [ expr ($total_minutes / $number_hours) * $gph ]
+        set dailyAverageGPH [ expr ($total_minutes / $number_hours / 60) * $gph ]
     } else {
         set dailyAverageGPH "None Logged"
     }
