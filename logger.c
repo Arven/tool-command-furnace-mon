@@ -225,8 +225,8 @@ while ( 1 ) {
     }
     fflush(stdout);
 
-    fprintf(minutes, "%d %f\n", tm.tm_hour, minutes_v(hour_seconds));
-    fflush(minutes);
+    fprintf(hours, "%d %f\n", tm.tm_hour, minutes_v(hour_seconds));
+    fflush(hours);
     slide_window4(window4);
     window4[3] = hour_seconds;
 

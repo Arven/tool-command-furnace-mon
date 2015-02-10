@@ -74,19 +74,21 @@ proc refresh {} {
     set datafile [ clock format [ expr $now ] -format data/%Y-%m-%d.minutes.dat ]
     set current_hour [ clock format [ expr $now ] -format %H ]
     set fp [open $datafile r]
-    set seconds [read $fp]
+    set table [read $fp]
+    close $fp
     set total_seconds 0
     set total_seconds_day 0
     set number_mins 0
     set number_mins_day 0
-    close $fp
-    foreach { hour minute secs } $seconds {
-        if [ expr $hour == $current_hour ] {
-            set total_seconds [ expr $total_seconds + $secs ]
-            incr number_mins
+    foreach { hour minute secs } $table {
+        if [ expr [ llength $secs ] > 0 ] {
+            if [ expr $hour == $current_hour ] {
+                set total_seconds [ expr $total_seconds + $secs ]
+                incr number_mins
+            }
+            set total_seconds_day [ expr $total_seconds_day + $secs ]
+            incr number_mins_day
         }
-        set total_seconds_day [ expr $total_seconds_day + $secs ]
-        incr number_mins_day
     }
     if [ expr $number_mins > 0 ] {
         set hourlyAverage [ expr $total_seconds / ($number_mins * 60) ]
