@@ -204,7 +204,7 @@ while ( 1 ) {
     printf("AVG MINUTES LOGGED IN PAST 4 HOURS: %f\n", window4_avg(window4));
     fflush(stdout);
 
-    fprintf(hours, "%d %f\n", tm.tm_hour - 1, minutes_v(hour_seconds));
+    fprintf(hours, "%d %f\n", 23, minutes_v(hour_seconds));
     fflush(hours);
 
     slide_window4(window4);
