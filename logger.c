@@ -9,6 +9,8 @@
 
 FILE* hours;
 FILE* minutes;
+char* AM = "AM";
+char* PM = "PM";
 
 int
 set_interface_attribs (int fd, int speed, int parity)
@@ -69,6 +71,45 @@ set_blocking (int fd, int should_block)
                 perror("error setting term attributes");
 }
 
+float
+minutes_v(float seconds) {
+  return seconds / (float) 60;
+}
+
+void
+slide_window4(float* array) {
+  for(int i = 1; i < 4; i++) {
+    array[i - 1] = array[i];
+  }
+}
+
+float
+window4_avg(float* array) {
+  float total = 0;
+  int number = 0;
+  for(int i = 0; i < 3; i++) {
+    if (array[i] >= 0) {
+      total += array[i];
+      number++;
+    }
+  }
+  total /= (float) 60;
+  total /= (float) number;
+  return total;
+}
+
+float
+window4_total(float* array) {
+  float total = 0;
+  for(int i = 0; i < 3; i++) {
+    if (array[i] > 0) {
+      total += array[i];
+    }
+  }
+  total /= (float) 60;
+  return total;
+}
+
 void
 main(int argc, char** argv) {
 
@@ -86,16 +127,62 @@ set_blocking (fd, 1);                    // set blocking
 time_t t = time(NULL);
 struct tm tm = *localtime(&t);
 
-printf("BEGINNING LOGGING\n");
-printf("------------------------\n");
-
 char buf;
 char strbuf[500];
+int num_day_minutes = 0;
+int num_hour_minutes = 0;
+float day_seconds = 0;
+float hour_seconds = 0;
+float window4[4];
+
+window4[0] = (float) -1;
+window4[1] = (float) -1;
+window4[2] = (float) -1;
+window4[3] = (float) -1;
+
+snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+
+if (access(strbuf, F_OK) >= 0) {
+  printf("READING OLD LOGS FOR TODAY\n");
+  printf("------------------------\n");
+  minutes = fopen(strbuf, "r");
+  int hour, minute, current_hour = -1;
+  float secs, hour_secs_for_window = 0;
+  while (!feof(minutes)) {
+    int v = fscanf(minutes, "%d %d %f\n", &hour, &minute, &secs);
+    if(v < 0) { perror("scanf"); }
+    // printf("GOT LINE: %d %d %f\n", hour, minute, secs);
+    num_day_minutes++;
+    day_seconds += secs;
+    hour_secs_for_window += secs;
+    if(tm.tm_hour == hour) {
+      num_hour_minutes++;
+      hour_seconds += secs;
+    }
+    if(current_hour != hour) {
+      slide_window4(window4);
+      window4[3] = hour_secs_for_window;
+      current_hour = hour;
+      hour_secs_for_window = 0;
+    }
+  }
+  slide_window4(window4);
+  window4[3] = hour_secs_for_window;
+  printf("MINUTES LOGGED THIS HOUR: %f running of %d total\n", hour_seconds / (float) 60, num_hour_minutes);
+  printf("MINUTES LOGGED THIS DAY : %f running of %d total\n", day_seconds / (float) 60, num_day_minutes);
+  printf("MINUTES LOGGED IN PAST 4 HOURS: %f\n", window4_total(window4));
+  printf("AVG MINUTES LOGGED IN PAST 4 HOURS: %f\n", window4_avg(window4));
+  fclose(minutes);
+  printf("------------------------\n");
+}
+
+printf("BEGINNING LOGGING\n");
+printf("------------------------\n");
+fflush(stdout);
+
 int current_day = tm.tm_mday;
 int current_hour = tm.tm_hour;
-int number_minutes = 0;
-float minute = 0;
-float hour = 0;
+float minute_seconds = 0;
 
 snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
 hours = fopen(strbuf, "a");
@@ -111,68 +198,61 @@ while ( 1 ) {
   time_t t = time(NULL);
   struct tm tm = *localtime(&t);
   if(current_day != tm.tm_mday) {
+    printf("----NEW LOGGING DAY  ---\n");
+    printf("DATE: %04d-%02d-%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday );
+    fflush(stdout);
+    current_day = tm.tm_mday;
+  }
+  if(current_day == tm.tm_mday && tm.tm_hour == 23 && tm.tm_min == 59) {
     printf("--- END LOGGING DAY  ---\n");
+    printf("DAY TOTAL (MINUTES): %f\n", minutes_v(day_seconds));
+    fflush(stdout);
     fclose(minutes);
     fclose(hours);
     snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
     hours = fopen(strbuf, "a");
     snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
     minutes = fopen(strbuf, "a");
-    current_day = tm.tm_mday;
+    day_seconds = 0;
+    num_day_minutes = 0;
   }
   if(current_hour != tm.tm_hour) {
-    hour = hour / (float) number_minutes;
     printf("--- END LOGGING HOUR ---\n");
-    printf("HOUR TOTAL (MINUTES): %f\n", hour);
-    printf("------------------------\n");
-    fprintf(minutes, "%d %f\n", tm.tm_hour, hour);
+    printf("HOUR TOTAL (MINUTES): %f\n", minutes_v(hour_seconds));
+    printf("MINUTES LOGGED IN PAST 4 HOURS: %f\n", window4_total(window4));
+    printf("AVG MINUTES LOGGED IN PAST 4 HOURS: %f\n", window4_avg(window4));
+    printf("----NEW LOGGING HOUR ---\n");
+    fflush(stdout);
+
+    if(tm.tm_hour == 0) {
+      printf("HOUR: 12 MIDNIGHT\n");
+    } else if (tm.tm_hour == 12) {
+      printf("HOUR: 12 NOON\n");
+    } else if (tm.tm_hour > 0 && tm.tm_hour < 12) {
+      printf("HOUR: %d AM\n", tm.tm_hour);
+    } else if (tm.tm_hour > 12) {
+      printf("HOUR: %d PM\n", tm.tm_hour - 12);
+    }
+    fflush(stdout);
+
+    fprintf(minutes, "%d %f\n", tm.tm_hour, minutes_v(hour_seconds));
     fflush(minutes);
-    hour = 0;
-    number_minutes = 0;
+    slide_window4(window4);
+    window4[3] = hour_seconds;
+
+    day_seconds += hour_seconds;
+    hour_seconds = 0;
+    num_hour_minutes = 0;
     current_hour = tm.tm_hour;
   }
-  minute = buf - 'A';
-  hour += minute;
-  number_minutes++;
-  printf("SECONDS THIS MINUTE: %f\n", minute);
-  fprintf(minutes, "%d %d %f\n", tm.tm_hour, tm.tm_min, minute);
+  minute_seconds = buf - 'A';
+  hour_seconds += minute_seconds;
+  num_hour_minutes++;
+  num_day_minutes++;
+  printf("MINUTE %d (SECONDS): %f\n", tm.tm_min, minute_seconds);
+  fflush(stdout);
+  fprintf(minutes, "%d %d %f\n", tm.tm_hour, tm.tm_min, minute_seconds);
   fflush(minutes);
 }
-
-/* while ( 1 ) {
-  start_a_new_day();
-  for (int j = 0; j <= 23; j++) {      // hours
-    for (int i = 0; i <= 59; i++) {    // minutes
-      int n = read(fd, &buf, 1);
-      if (n < 0) {
-          perror("stream closed abruptly");
-          return;
-      }
-      minute = buf - 'A';
-      hour += minute;
-      printf("SECONDS THIS MINUTE: %f\n", minute);
-      time_t t = time(NULL);
-      struct tm tm = *localtime(&t);
-      fprintf(minutes, "%d %d %f\n", tm.tm_hour, tm.tm_min, minute);
-      fflush(minutes);
-      if(is_a_new_day()) {
-        start_a_new_day();
-        goto dawn;
-      }
-    }
-    hour = hour / (float) 60;
-    printf("--- END LOGGING HOUR ---\n");
-    printf("HOUR TOTAL (MINUTES): %f\n", hour);
-    printf("------------------------\n");
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
-    fprintf(hours, "%d %f\n", tm.tm_hour, hour);
-    fflush(hours);
-    hour = 0;
-  }
-  dawn:
-  fclose(minutes);
-  fclose(hours);
-} */
 
 }
