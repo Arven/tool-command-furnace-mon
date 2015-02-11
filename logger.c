@@ -277,7 +277,7 @@ while ( 1 ) {
     printf("HOUR AVG  (MINUTES): %f\n", minutes_v(day_seconds) / (float) 24);
     printf("----NEW LOGGING DAY  ---\n");
     printf("DATE: %04d-%02d-%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday );
-    printf("----NEW LOGGING HOUR ---\n");
+    printf("--- NEW LOGGING HOUR ---\n");
 
     if(tm.tm_hour == 0) {
       printf("HOUR: 12 MIDNIGHT\n");
@@ -318,7 +318,7 @@ while ( 1 ) {
     } else {
       printf("NO DATA FOR PAST 6 HOURS\n");
     }
-    printf("----NEW LOGGING HOUR ---\n");
+    printf("--- NEW LOGGING HOUR ---\n");
     fflush(stdout);
 
     if(tm.tm_hour == 0) {
