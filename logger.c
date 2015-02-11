@@ -77,17 +77,17 @@ minutes_v(float seconds) {
 }
 
 void
-slide_window4(float* array) {
-  for(int i = 1; i < 4; i++) {
+slide_window24(float* array) {
+  for(int i = 1; i < 24; i++) {
     array[i - 1] = array[i];
   }
 }
 
 float
-window4_avg(float* array) {
+window24_avg(float* array, int j) {
   float total = 0;
   int number = 0;
-  for(int i = 0; i < 3; i++) {
+  for(int i = 24 - j; i < 24; i++) {
     if (array[i] >= 0) {
       total += array[i];
       number++;
@@ -98,10 +98,21 @@ window4_avg(float* array) {
   return total;
 }
 
+int
+window24_wsize(float* array) {
+  int number = 0;
+  for(int i = 0; i < 24; i++) {
+    if (array[i] >= 0) {
+      number++;
+    }
+  }
+  return number;
+}
+
 float
-window4_total(float* array) {
+window24_total(float* array, int j) {
   float total = 0;
-  for(int i = 0; i < 3; i++) {
+  for(int i = 24 - j; i < 24; i++) {
     if (array[i] > 0) {
       total += array[i];
     }
@@ -133,12 +144,43 @@ int num_day_minutes = 0;
 int num_hour_minutes = 0;
 float day_seconds = 0;
 float hour_seconds = 0;
-float window4[4];
+float window24[24];
 
-window4[0] = (float) -1;
-window4[1] = (float) -1;
-window4[2] = (float) -1;
-window4[3] = (float) -1;
+for(int i = 0; i < 24; i++) {
+  window24[i] = (float) -1;
+}
+
+time_t t_yesterday = time(NULL);
+struct tm tm_yesterday = *localtime(&t);
+tm_yesterday.tm_mday--;
+mktime(&tm_yesterday);
+snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm_yesterday.tm_year + 1900, tm_yesterday.tm_mon + 1, tm_yesterday.tm_mday);
+
+if (access(strbuf, F_OK) >= 0) {
+  printf("READING OLD LOGS FROM YESTERDAY\n");
+  printf("-------------------------------\n");
+  minutes = fopen(strbuf, "r");
+  int hour, minute, past_day_minutes = 0, current_hour = -1;
+  float secs, hour_secs_for_window = 0;
+  while (!feof(minutes)) {
+    int v = fscanf(minutes, "%d %d %f\n", &hour, &minute, &secs);
+    if(v < 0) { perror("scanf"); }
+    // printf("GOT LINE: %d %d %f\n", hour, minute, secs);
+    hour_secs_for_window += secs;
+    past_day_minutes++;
+    if(current_hour != hour) {
+      slide_window24(window24);
+      window24[23] = hour_secs_for_window;
+      current_hour = hour;
+      hour_secs_for_window = 0;
+    }
+  }
+  slide_window24(window24);
+  window24[23] = hour_secs_for_window;
+  printf("MINUTES LOGGED YESTERDAY : %f running of %d total\n", day_seconds / (float) 60, past_day_minutes);
+  fclose(minutes);
+  printf("------------------------\n");
+}
 
 snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
 
@@ -151,7 +193,6 @@ if (access(strbuf, F_OK) >= 0) {
   while (!feof(minutes)) {
     int v = fscanf(minutes, "%d %d %f\n", &hour, &minute, &secs);
     if(v < 0) { perror("scanf"); }
-    // printf("GOT LINE: %d %d %f\n", hour, minute, secs);
     num_day_minutes++;
     day_seconds += secs;
     hour_secs_for_window += secs;
@@ -160,18 +201,28 @@ if (access(strbuf, F_OK) >= 0) {
       hour_seconds += secs;
     }
     if(current_hour != hour) {
-      slide_window4(window4);
-      window4[3] = hour_secs_for_window;
+      slide_window24(window24);
+      window24[23] = hour_secs_for_window;
       current_hour = hour;
       hour_secs_for_window = 0;
     }
   }
-  slide_window4(window4);
-  window4[3] = hour_secs_for_window;
+  slide_window24(window24);
+  window24[23] = hour_secs_for_window;
   printf("MINUTES LOGGED THIS HOUR: %f running of %d total\n", hour_seconds / (float) 60, num_hour_minutes);
   printf("MINUTES LOGGED THIS DAY : %f running of %d total\n", day_seconds / (float) 60, num_day_minutes);
-  printf("MINUTES LOGGED IN PAST 4 HOURS: %f\n", window4_total(window4));
-  printf("AVG MINUTES LOGGED IN PAST 4 HOURS: %f\n", window4_avg(window4));
+  if( window24_wsize(window24) >= 4 ) {
+    printf("MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_total(window24, 4));
+    printf("AVG MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_avg(window24, 4));
+  } else {
+    printf("NO DATA FOR PAST 4 HOURS\n");
+  }
+  if( window24_wsize(window24) >= 6 ) {
+    printf("MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_total(window24, 6));
+    printf("AVG MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_avg(window24, 6));
+  } else {
+    printf("NO DATA FOR PAST 6 HOURS\n");
+  }
   fclose(minutes);
   printf("------------------------\n");
 }
@@ -200,19 +251,30 @@ while ( 1 ) {
   if(current_day != tm.tm_mday) {
     printf("--- END LOGGING HOUR ---\n");
     printf("HOUR TOTAL (MINUTES): %f\n", minutes_v(hour_seconds));
-    printf("MINUTES LOGGED IN PAST 4 HOURS: %f\n", window4_total(window4));
-    printf("AVG MINUTES LOGGED IN PAST 4 HOURS: %f\n", window4_avg(window4));
+    if( window24_wsize(window24) >= 4 ) {
+      printf("MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_total(window24, 4));
+      printf("AVG MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_avg(window24, 4));
+    } else {
+      printf("NO DATA FOR PAST 4 HOURS\n");
+    }
+    if( window24_wsize(window24) >= 6 ) {
+      printf("MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_total(window24, 6));
+      printf("AVG MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_avg(window24, 6));
+    } else {
+      printf("NO DATA FOR PAST 6 HOURS\n");
+    }
     fflush(stdout);
 
     fprintf(hours, "%d %f\n", 23, minutes_v(hour_seconds));
     fflush(hours);
 
-    slide_window4(window4);
-    window4[3] = hour_seconds;
+    slide_window24(window24);
+    window24[23] = hour_seconds;
     day_seconds += hour_seconds;
 
     printf("--- END LOGGING DAY  ---\n");
     printf("DAY TOTAL (MINUTES): %f\n", minutes_v(day_seconds));
+    printf("HOUR AVG  (MINUTES): %f\n", minutes_v(day_seconds) / (float) 24);
     printf("----NEW LOGGING DAY  ---\n");
     printf("DATE: %04d-%02d-%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday );
     printf("----NEW LOGGING HOUR ---\n");
@@ -244,8 +306,18 @@ while ( 1 ) {
   } else if (current_hour != tm.tm_hour) {
     printf("--- END LOGGING HOUR ---\n");
     printf("HOUR TOTAL (MINUTES): %f\n", minutes_v(hour_seconds));
-    printf("MINUTES LOGGED IN PAST 4 HOURS: %f\n", window4_total(window4));
-    printf("AVG MINUTES LOGGED IN PAST 4 HOURS: %f\n", window4_avg(window4));
+    if( window24_wsize(window24) >= 4 ) {
+      printf("MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_total(window24, 4));
+      printf("AVG MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_avg(window24, 4));
+    } else {
+      printf("NO DATA FOR PAST 4 HOURS\n");
+    }
+    if( window24_wsize(window24) >= 6 ) {
+      printf("MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_total(window24, 6));
+      printf("AVG MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_avg(window24, 6));
+    } else {
+      printf("NO DATA FOR PAST 6 HOURS\n");
+    }
     printf("----NEW LOGGING HOUR ---\n");
     fflush(stdout);
 
@@ -263,8 +335,8 @@ while ( 1 ) {
     fprintf(hours, "%d %f\n", tm.tm_hour - 1, minutes_v(hour_seconds));
     fflush(hours);
 
-    slide_window4(window4);
-    window4[3] = hour_seconds;
+    slide_window24(window24);
+    window24[23] = hour_seconds;
 
     day_seconds += hour_seconds;
     hour_seconds = 0;
