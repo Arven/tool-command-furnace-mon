@@ -160,13 +160,14 @@ if (access(strbuf, F_OK) >= 0) {
   printf("READING OLD LOGS FROM YESTERDAY\n");
   printf("-------------------------------\n");
   minutes = fopen(strbuf, "r");
-  int hour, minute, past_day_minutes = 0, current_hour = -1;
+  int hour, minute, past_day_minutes = 0, past_day_seconds = 0, current_hour = -1;
   float secs, hour_secs_for_window = 0;
   while (!feof(minutes)) {
     int v = fscanf(minutes, "%d %d %f\n", &hour, &minute, &secs);
     if(v < 0) { perror("scanf"); }
     // printf("GOT LINE: %d %d %f\n", hour, minute, secs);
     hour_secs_for_window += secs;
+    past_day_seconds += secs;
     past_day_minutes++;
     if(current_hour != hour) {
       slide_window24(window24);
@@ -177,7 +178,7 @@ if (access(strbuf, F_OK) >= 0) {
   }
   slide_window24(window24);
   window24[23] = hour_secs_for_window;
-  printf("MINUTES LOGGED YESTERDAY : %f running of %d total\n", day_seconds / (float) 60, past_day_minutes);
+  printf("MINUTES LOGGED YESTERDAY : %f running of %d total\n", past_day_seconds / (float) 60, past_day_minutes);
   fclose(minutes);
   printf("------------------------\n");
 }
