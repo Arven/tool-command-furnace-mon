@@ -250,6 +250,10 @@ while ( 1 ) {
   time_t t = time(NULL);
   struct tm tm = *localtime(&t);
   if(current_day != tm.tm_mday) {
+    slide_window24(window24);
+    window24[23] = hour_seconds;
+    day_seconds += hour_seconds;
+
     printf("--- END LOGGING HOUR ---\n");
     printf("HOUR TOTAL (MINUTES): %f\n", minutes_v(hour_seconds));
     if( window24_wsize(window24) >= 4 ) {
@@ -268,10 +272,6 @@ while ( 1 ) {
 
     fprintf(hours, "%d %f\n", 23, minutes_v(hour_seconds));
     fflush(hours);
-
-    slide_window24(window24);
-    window24[23] = hour_seconds;
-    day_seconds += hour_seconds;
 
     printf("--- END LOGGING DAY  ---\n");
     printf("DAY TOTAL (MINUTES): %f\n", minutes_v(day_seconds));
@@ -305,6 +305,9 @@ while ( 1 ) {
     hour_seconds = 0;
     num_hour_minutes = 0;
   } else if (current_hour != tm.tm_hour) {
+    slide_window24(window24);
+    window24[23] = hour_seconds;
+
     printf("--- END LOGGING HOUR ---\n");
     printf("HOUR TOTAL (MINUTES): %f\n", minutes_v(hour_seconds));
     if( window24_wsize(window24) >= 4 ) {
@@ -335,9 +338,6 @@ while ( 1 ) {
 
     fprintf(hours, "%d %f\n", tm.tm_hour - 1, minutes_v(hour_seconds));
     fflush(hours);
-
-    slide_window24(window24);
-    window24[23] = hour_seconds;
 
     day_seconds += hour_seconds;
     hour_seconds = 0;
