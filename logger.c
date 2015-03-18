@@ -11,6 +11,7 @@ FILE* hours;
 FILE* minutes;
 char* AM = "AM";
 char* PM = "PM";
+int just_started = 1;
 
 int
 set_interface_attribs (int fd, int speed, int parity)
@@ -348,10 +349,25 @@ while ( 1 ) {
   hour_seconds += minute_seconds;
   num_hour_minutes++;
   num_day_minutes++;
-  printf("MINUTE %d (SECONDS): %f\n", tm.tm_min, minute_seconds);
+  if(tm.tm_min % 20 == 0) {
+    printf("MIN %02d: ", tm.tm_min);
+  } else if(just_started == 1) {
+    printf("MIN %02d: ", (tm.tm_min / 20) * 20);
+    int m = tm.tm_min % 10;
+    while(m > 0) {
+      printf("-- ");
+      m--;
+    }
+  }
+  //printf("MINUTE %d (SECONDS): %f\n", tm.tm_min, minute_seconds);
+  printf("%02d ", (int) minute_seconds);
+  if(tm.tm_min % 20 == 19) {
+    printf("\n");
+  }
   fflush(stdout);
   fprintf(minutes, "%d %d %f\n", tm.tm_hour, tm.tm_min, minute_seconds);
   fflush(minutes);
+  just_started = 0;
 }
 
 }
