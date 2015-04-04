@@ -158,8 +158,8 @@ mktime(&tm_yesterday);
 snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm_yesterday.tm_year + 1900, tm_yesterday.tm_mon + 1, tm_yesterday.tm_mday);
 
 if (access(strbuf, F_OK) >= 0) {
-  printf("READING OLD LOGS FROM YESTERDAY\n");
-  printf("-------------------------------\n");
+  //printf("READING OLD LOGS FROM YESTERDAY\n");
+  //printf("-------------------------------\n");
   minutes = fopen(strbuf, "r");
   int hour, minute, past_day_minutes = 0, past_day_seconds = 0, current_hour = -1;
   float secs, hour_secs_for_window = 0;
@@ -179,16 +179,16 @@ if (access(strbuf, F_OK) >= 0) {
   }
   slide_window24(window24);
   window24[23] = hour_secs_for_window;
-  printf("MINUTES LOGGED YESTERDAY : %f running of %d total\n", past_day_seconds / (float) 60, past_day_minutes);
+  //printf("MINUTES LOGGED YESTERDAY : %f running of %d total\n", past_day_seconds / (float) 60, past_day_minutes);
   fclose(minutes);
-  printf("------------------------\n");
+  //printf("------------------------\n");
 }
 
 snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
 
 if (access(strbuf, F_OK) >= 0) {
-  printf("READING OLD LOGS FOR TODAY\n");
-  printf("------------------------\n");
+  //printf("READING OLD LOGS FOR TODAY\n");
+  //printf("------------------------\n");
   minutes = fopen(strbuf, "r");
   int hour, minute, current_hour = -1;
   float secs, hour_secs_for_window = 0;
@@ -211,26 +211,26 @@ if (access(strbuf, F_OK) >= 0) {
   }
   slide_window24(window24);
   window24[23] = hour_secs_for_window;
-  printf("MINUTES LOGGED THIS HOUR: %f running of %d total\n", hour_seconds / (float) 60, num_hour_minutes);
-  printf("MINUTES LOGGED THIS DAY : %f running of %d total\n", day_seconds / (float) 60, num_day_minutes);
+  //printf("MINUTES LOGGED THIS HOUR: %f running of %d total\n", hour_seconds / (float) 60, num_hour_minutes);
+  //printf("MINUTES LOGGED THIS DAY : %f running of %d total\n", day_seconds / (float) 60, num_day_minutes);
   if( window24_wsize(window24) >= 4 ) {
-    printf("MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_total(window24, 4));
-    printf("AVG MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_avg(window24, 4));
+  //  printf("MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_total(window24, 4));
+  //  printf("AVG MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_avg(window24, 4));
   } else {
-    printf("NO DATA FOR PAST 4 HOURS\n");
+  //  printf("NO DATA FOR PAST 4 HOURS\n");
   }
   if( window24_wsize(window24) >= 6 ) {
-    printf("MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_total(window24, 6));
-    printf("AVG MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_avg(window24, 6));
+  //  printf("MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_total(window24, 6));
+  //  printf("AVG MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_avg(window24, 6));
   } else {
-    printf("NO DATA FOR PAST 6 HOURS\n");
+  //  printf("NO DATA FOR PAST 6 HOURS\n");
   }
   fclose(minutes);
-  printf("------------------------\n");
+  //printf("------------------------\n");
 }
 
-printf("BEGINNING LOGGING\n");
-printf("------------------------\n");
+//printf("BEGINNING LOGGING\n");
+printf("--- BEGINNING LOGGING ---\n");
 fflush(stdout);
 
 int current_day = tm.tm_mday;
@@ -255,40 +255,45 @@ while ( 1 ) {
     window24[23] = hour_seconds;
     day_seconds += hour_seconds;
 
-    printf("--- END LOGGING HOUR ---\n");
-    printf("HOUR TOTAL (MINUTES): %f\n", minutes_v(hour_seconds));
-    if( window24_wsize(window24) >= 4 ) {
-      printf("MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_total(window24, 4));
-      printf("AVG MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_avg(window24, 4));
-    } else {
-      printf("NO DATA FOR PAST 4 HOURS\n");
-    }
-    if( window24_wsize(window24) >= 6 ) {
-      printf("MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_total(window24, 6));
-      printf("AVG MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_avg(window24, 6));
-    } else {
-      printf("NO DATA FOR PAST 6 HOURS\n");
-    }
+    // printf("--- END LOGGING HOUR ---\n");
+    // printf("HOUR TOTAL (MINUTES): %f\n", minutes_v(hour_seconds));
+    printf("---TOTAL:[%2.2f] 4H:[TOTAL %3.2f / AVG %2.2f] 6H:[TOTAL %3.2f / AVG %2.2f]---\n", 
+        minutes_v(hour_seconds),
+        window24_total(window24, 4), window24_avg(window24, 4),
+        window24_total(window24, 6), window24_avg(window24, 6)
+    );
+    //if( window24_wsize(window24) >= 4 ) {
+    //  printf("MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_total(window24, 4));
+    //  printf("AVG MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_avg(window24, 4));
+    //} else {
+    //  printf("NO DATA FOR PAST 4 HOURS\n");
+    //}
+    //if( window24_wsize(window24) >= 6 ) {
+    //  printf("MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_total(window24, 6));
+    //  printf("AVG MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_avg(window24, 6));
+    //} else {
+    //  printf("NO DATA FOR PAST 6 HOURS\n");
+    //}
     fflush(stdout);
 
     fprintf(hours, "%d %f\n", 23, minutes_v(hour_seconds));
     fflush(hours);
 
-    printf("--- END LOGGING DAY  ---\n");
-    printf("DAY TOTAL (MINUTES): %f\n", minutes_v(day_seconds));
-    printf("HOUR AVG  (MINUTES): %f\n", minutes_v(day_seconds) / (float) 24);
-    printf("----NEW LOGGING DAY  ---\n");
-    printf("DATE: %04d-%02d-%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday );
-    printf("--- NEW LOGGING HOUR ---\n");
+    printf("-- DAY TOTAL %02d-%02d-%04d: %4.2f AVG: %2.2f ---\n", tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900, minutes_v(day_seconds), minutes_v(day_seconds) / (float) 24);
+    //printf("DAY TOTAL (MINUTES): %f\n", minutes_v(day_seconds));
+    //printf("HOUR AVG  (MINUTES): %f\n", minutes_v(day_seconds) / (float) 24);
+    //printf("----NEW LOGGING DAY  ---\n");
+    //printf("DATE: %04d-%02d-%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday );
+    //printf("--- NEW LOGGING HOUR ---\n");
 
     if(tm.tm_hour == 0) {
-      printf("HOUR: 12 MIDNIGHT\n");
+      printf("--- HOUR: 12 AM ---\n");
     } else if (tm.tm_hour == 12) {
-      printf("HOUR: 12 NOON\n");
+      printf("--- HOUR: 12 PM ---\n");
     } else if (tm.tm_hour > 0 && tm.tm_hour < 12) {
-      printf("HOUR: %d AM\n", tm.tm_hour);
+      printf("--- HOUR: %2d AM ---\n", tm.tm_hour);
     } else if (tm.tm_hour > 12) {
-      printf("HOUR: %d PM\n", tm.tm_hour - 12);
+      printf("--- HOUR: %2d PM ---\n", tm.tm_hour - 12);
     }
     fflush(stdout);
 
@@ -309,31 +314,37 @@ while ( 1 ) {
     slide_window24(window24);
     window24[23] = hour_seconds;
 
-    printf("--- END LOGGING HOUR ---\n");
-    printf("HOUR TOTAL (MINUTES): %f\n", minutes_v(hour_seconds));
-    if( window24_wsize(window24) >= 4 ) {
-      printf("MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_total(window24, 4));
-      printf("AVG MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_avg(window24, 4));
-    } else {
-      printf("NO DATA FOR PAST 4 HOURS\n");
-    }
-    if( window24_wsize(window24) >= 6 ) {
-      printf("MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_total(window24, 6));
-      printf("AVG MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_avg(window24, 6));
-    } else {
-      printf("NO DATA FOR PAST 6 HOURS\n");
-    }
-    printf("--- NEW LOGGING HOUR ---\n");
+    printf("---TOTAL:[%2.2f] 4H:[TOTAL %3.2f / AVG %2.2f] 6H:[TOTAL %3.2f / AVG %2.2f]---\n", 
+        minutes_v(hour_seconds),
+        window24_total(window24, 4), window24_avg(window24, 4),
+        window24_total(window24, 6), window24_avg(window24, 6)
+    );
+
+//    printf("--- END LOGGING HOUR ---\n");
+//    printf("HOUR TOTAL (MINUTES): %f\n", minutes_v(hour_seconds));
+//    if( window24_wsize(window24) >= 4 ) {
+//      printf("MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_total(window24, 4));
+//      printf("AVG MINUTES LOGGED IN PAST 4 HOURS: %f\n", window24_avg(window24, 4));
+//    } else {
+//      printf("NO DATA FOR PAST 4 HOURS\n");
+//    }
+//    if( window24_wsize(window24) >= 6 ) {
+//      printf("MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_total(window24, 6));
+//      printf("AVG MINUTES LOGGED IN PAST 6 HOURS: %f\n", window24_avg(window24, 6));
+//    } else {
+//      printf("NO DATA FOR PAST 6 HOURS\n");
+//    }
+//    printf("--- NEW LOGGING HOUR ---\n");
     fflush(stdout);
 
     if(tm.tm_hour == 0) {
-      printf("HOUR: 12 MIDNIGHT\n");
+      printf("--- HOUR: 12 AM ---\n");
     } else if (tm.tm_hour == 12) {
-      printf("HOUR: 12 NOON\n");
+      printf("--- HOUR: 12 PM ---\n");
     } else if (tm.tm_hour > 0 && tm.tm_hour < 12) {
-      printf("HOUR: %d AM\n", tm.tm_hour);
+      printf("--- HOUR: %2d AM ---\n", tm.tm_hour);
     } else if (tm.tm_hour > 12) {
-      printf("HOUR: %d PM\n", tm.tm_hour - 12);
+      printf("--- HOUR: %2d PM ---\n", tm.tm_hour - 12);
     }
     fflush(stdout);
 
@@ -353,7 +364,7 @@ while ( 1 ) {
     printf("MIN %02d: ", tm.tm_min);
   } else if(just_started == 1) {
     printf("MIN %02d: ", (tm.tm_min / 20) * 20);
-    int m = tm.tm_min % 10;
+    int m = tm.tm_min % 20;
     while(m > 0) {
       printf("-- ");
       m--;

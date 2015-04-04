@@ -29,10 +29,14 @@ int main(int argc, char** argv) {
         buf[sz] = 0;
         if(paused == 0) {
           fprintf(stdout, "%s", buf);
-          fflush(stdout);
+          if(buf[sz - 1] == '\n') {
+            fflush(stdout);
+          }
         } else {
           fprintf(logbuffer, "%s", buf);
-          fflush(logbuffer);
+          if(buf[sz - 1] == '\n') {
+            fflush(logbuffer);
+          }
         }
       }
     }
