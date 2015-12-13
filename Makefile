@@ -13,3 +13,6 @@ spinner:
 
 clean:
 	rm logger spinner.binary 2> /dev/null || true
+
+run: spinner
+	p1load -r spinner.binary 
