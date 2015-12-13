@@ -1,6 +1,9 @@
-all: logger spinner xbuffer
+all: logger spinner xbuffer logfmt
 logger:
 	gcc -std=gnu99 logger.c -o logger
+
+retrolog:
+	gcc -g -std=gnu99 retrolog.c -o retrolog
 
 xbuffer:
 	gcc -std=gnu99 xbuffer.c -o xbuffer
