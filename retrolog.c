@@ -16,6 +16,10 @@ int just_started = 1;
 int retro_year;
 int retro_month;
 int retro_day;
+int retro_num_days;
+int retro_year_end;
+int retro_month_end;
+int retro_day_end;
 
 float
 minutes_v(float seconds) {
@@ -70,8 +74,8 @@ window24_total(float* array, int j) {
 void
 main(int argc, char** argv) {
 
-if(argc != 2) {
-  printf("USAGE: retrolog 20151209\n");
+if(argc != 2 && argc != 3) {
+  printf("USAGE: retrolog <start> [<end>]\n");
   return;
 }
 
@@ -85,6 +89,23 @@ struct tm tm = *localtime(&t);
 tm.tm_year = retro_year - 1900;
 tm.tm_mon = retro_month - 1;
 tm.tm_mday = retro_day;
+
+struct tm tm_end = *localtime(&t);
+if(argc == 3) {
+  int dte2 = atoi(argv[2]);
+  retro_year_end = dte2 / 10000;
+  retro_month_end = ( dte2 / 100 ) % 100;
+  retro_day_end = dte2 % 100;
+  tm_end.tm_year = retro_year_end - 1900;
+  tm_end.tm_mon = retro_month_end - 1;
+  tm_end.tm_mday = retro_day_end + 1;
+} else {
+  tm_end.tm_year = tm.tm_mon;
+  tm_end.tm_mon = tm.tm_mon;
+  tm_end.tm_mday = tm.tm_mday + 1;
+}
+
+mktime(&tm_end);
 
 char buf;
 char strbuf[500];
@@ -180,20 +201,6 @@ if (access(strbuf, F_OK) >= 0) {
 }
 
 //printf("BEGINNING LOGGING\n");
-printf("--- BEGINNING RETROACTIVE LOGGING FOR %d/%d/%d ---\n", retro_month, retro_day, retro_year);
-printf("--- HOUR: 12 AM ---\n");
-fflush(stdout);
-
-int current_day = tm.tm_mday;
-int current_hour = tm.tm_hour;
-float minute_seconds = 0;
-
-snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
-if (access(strbuf, F_OK) < 0) {
-  printf("Error loading logs...\n");
-  return;
-}
-
 t = time(NULL);
 tm = *localtime(&t);
 tm.tm_year = retro_year - 1900;
@@ -213,6 +220,30 @@ tm_g.tm_mon = 0;
 tm_g.tm_mday = 0;
 tm_g.tm_hour = 0;
 tm_g.tm_min = 0;
+
+struct tm tm_o = *localtime(&t);
+tm_g.tm_year = 0;
+tm_g.tm_mon = 0;
+tm_g.tm_mday = 0;
+tm_g.tm_hour = 0;
+tm_g.tm_min = 0;
+
+mktime(&tm_end);
+mktime(&tm);
+
+int current_day = tm.tm_mday;
+int current_hour = tm.tm_hour;
+float minute_seconds = 0;
+
+while (tm.tm_yday < tm_end.tm_yday) {
+printf("--- BEGINNING RETROACTIVE LOGGING FOR %d/%d/%d ---\n", tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900);
+fflush(stdout);
+
+snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+if (access(strbuf, F_OK) < 0) {
+  printf("Error loading logs...\n");
+  return;
+}
 
 minutes = fopen(strbuf, "r");
 int flushed = 0;
@@ -286,8 +317,12 @@ while (!feof(minutes) || flushed == 0) {
 
     fflush(stdout);
 
-    printf("-- DAY TOTAL %02d-%02d-%04d: %4.2f AVG: %2.2f ---\n", tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900, minutes_v(day_seconds), minutes_v(day_seconds) / (float) 24);
     if(flushed) {
+      tm_o.tm_mon = tm.tm_mon;
+      tm_o.tm_mday = tm.tm_mday - 1;
+      tm_o.tm_year = tm.tm_year;
+      mktime(&tm_o);
+      printf("-- DAY TOTAL %02d-%02d-%04d: %4.2f AVG: %2.2f ---\n", tm_o.tm_mon + 1, tm_o.tm_mday, tm_o.tm_year + 1900, minutes_v(day_seconds), minutes_v(day_seconds) / (float) 24);
       goto end_log;
     }
 
@@ -374,6 +409,21 @@ while (!feof(minutes) || flushed == 0) {
 
 printf("\n");
 end_log:
-printf("--- ENDING RETROACTIVE LOGGING %d/%d/%d ---\n", retro_month, retro_day, retro_year);
+if(tm.tm_hour != 0 || tm.tm_min != 0) {   // Add a whole day if the file is done without hitting the
+  //printf("Incomplete previous day. %d %d %d\n", tm.tm_hour, tm.tm_min);
+  tm.tm_hour = 0;// end of the day. Reset all the time counters to 0
+  tm.tm_min = 0;
+  tm.tm_sec = 0;
+  tm.tm_mday ++;
+  mktime(&tm);
+}
+
+tm_o.tm_mon = tm.tm_mon;
+tm_o.tm_mday = tm.tm_mday - 1;
+tm_o.tm_year = tm.tm_year;
+mktime(&tm_o);
+printf("--- ENDING RETROACTIVE LOGGING %d/%d/%d ---\n", tm_o.tm_mon + 1, tm_o.tm_mday, tm_o.tm_year + 1900);
+
+}
 
 }
