@@ -1,14 +1,14 @@
-all: logger spinner xbuffer logfmt
-logger:
+all: logger spinner xbuffer logfmt retrolog
+logger: logger.c
 	gcc -std=gnu99 logger.c -o logger
 
-retrolog:
+retrolog: retrolog.c
 	gcc -g -std=gnu99 retrolog.c -o retrolog
 
-xbuffer:
+xbuffer: xbuffer.c
 	gcc -std=gnu99 xbuffer.c -o xbuffer
 
-spinner:
+spinner: spinner.spin
 	openspin -I include spinner.spin
 
 clean:

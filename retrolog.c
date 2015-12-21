@@ -75,7 +75,8 @@ void
 main(int argc, char** argv) {
 
 if(argc != 2 && argc != 3) {
-  printf("USAGE: retrolog <start> [<end>]\n");
+  printf("USAGE: %s <start> [<end>]\n", argv[0]);
+  printf("DATE FORMAT: YYYYMMDD\n");
   return;
 }
 
@@ -206,6 +207,8 @@ tm = *localtime(&t);
 tm.tm_year = retro_year - 1900;
 tm.tm_mon = retro_month - 1;
 tm.tm_mday = retro_day;
+tm.tm_hour = 0;
+tm.tm_min = 0;
 
 struct tm tm_p = *localtime(&t);
 tm_p.tm_year = retro_year - 1900;
@@ -231,25 +234,54 @@ tm_g.tm_min = 0;
 mktime(&tm_end);
 mktime(&tm);
 
+int gap = 0;
+
+while (tm.tm_yday < tm_end.tm_yday) {
+
+snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+while (access(strbuf, F_OK) < 0) {
+  printf("--- NO DATA FOR %d/%d/%d ---\n", tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900);
+  //printf("Error loading logs...\n");
+  time_t diff = difftime(mktime(&tm_end), mktime(&tm));
+  //printf("%d", diff);
+  if(diff < (1440 * 2 * 60)) {
+    printf("--- END LOG FOR %d/%d/%d ---\n", tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900);
+    return;
+  }
+
+  tm_p.tm_year = tm.tm_year;
+  tm_p.tm_mon = tm.tm_mon;
+  tm_p.tm_mday = tm.tm_mday;
+  tm_p.tm_hour = 23;
+  tm_p.tm_min = 59;
+
+  tm.tm_year = tm.tm_year;
+  tm.tm_mon = tm.tm_mon;
+  tm.tm_mday = tm.tm_mday + 1;
+  tm.tm_hour = 0;
+  tm.tm_min = 0;
+  //gap = 1;
+  mktime(&tm);
+  snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+  //goto end_log;
+  //return;
+}
+
+printf("--- BEGINNING RETROACTIVE LOGGING FOR %d/%d/%d ---\n", tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900);
+printf("--- HOUR: 12 AM ---\n");
+fflush(stdout);
+
 int current_day = tm.tm_mday;
 int current_hour = tm.tm_hour;
 float minute_seconds = 0;
 
-while (tm.tm_yday < tm_end.tm_yday) {
-printf("--- BEGINNING RETROACTIVE LOGGING FOR %d/%d/%d ---\n", tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900);
-fflush(stdout);
-
-snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
-if (access(strbuf, F_OK) < 0) {
-  printf("Error loading logs...\n");
-  return;
-}
-
+//printf("Opening %s\n", strbuf);
 minutes = fopen(strbuf, "r");
 int flushed = 0;
-int gap = 0;
 float gap_minute_seconds;
 while (!feof(minutes) || flushed == 0) {
+
+  //printf("mday %d hour %d min %d sec %d\n", tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
   if(feof(minutes)) {
     flushed = 1;
@@ -260,11 +292,14 @@ while (!feof(minutes) || flushed == 0) {
     if(!gap) {
     int v = fscanf(minutes, "%d %d %f\n", &h, &m, &minute_seconds);
     if (v < 0) { perror("fscanf"); }
+//  printf("XXX: %d %d %f\n", h, m, minute_seconds);
     tm.tm_hour = h;
     tm.tm_min = m;
     time_t diff = difftime(mktime(&tm), mktime(&tm_p));
+    //printf("XXX NOGAP %d\n", diff);
     if(diff > 60) {
       if(diff % 60 == 0) {
+        //printf("XXX TIME ABERRATION FOUND\n", tm.tm_mday, tm.tm_hour, tm.tm_min);
         tm_g.tm_year = tm.tm_year;
         tm_g.tm_mon = tm.tm_mon;
         tm_g.tm_mday = tm.tm_mday;
@@ -284,6 +319,7 @@ while (!feof(minutes) || flushed == 0) {
     }
     }
     if (gap) {
+      //printf("XXX GAP: %d %d %d\n", tm.tm_mday, tm.tm_hour, tm.tm_min);
       time_t diff = difftime(mktime(&tm_g), mktime(&tm_p));
       //printf("Timedifference... %d %d\n", diff, tm_g.tm_min);
       if(diff == 60) {
