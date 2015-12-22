@@ -382,12 +382,15 @@ while (!feof(minutes) || flushed == 0) {
       tm_o.tm_mday = tm.tm_mday - 1;
       tm_o.tm_year = tm.tm_year;
       mktime(&tm_o);
-      printf("---TOTAL:[%2.2f] 24H:[TOTAL %4.2f / AVG %3.2f] ---\n",
-        minutes_v(hour_seconds),
+      //printf("---TOTAL:[%2.2f] 24H:[TOTAL %4.2f / AVG %3.2f] ---\n",
+      //  minutes_v(hour_seconds),
+      //  window24_total(window24, 24),
+      //  window24_avg(window24, 24)
+      //);
+      printf("-- DAY TOTAL %02d-%02d-%04d: %4.2f AVG: %2.2f ---\n", tm_o.tm_mon + 1, tm_o.tm_mday, tm_o.tm_year + 1900,
         window24_total(window24, 24),
         window24_avg(window24, 24)
       );
-      //printf("-- DAY TOTAL %02d-%02d-%04d: %4.2f AVG: %2.2f ---\n", tm_o.tm_mon + 1, tm_o.tm_mday, tm_o.tm_year + 1900, minutes_v(day_seconds), minutes_v(day_seconds) / (float) 24);
       goto end_log;
     }
 
