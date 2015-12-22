@@ -77,12 +77,13 @@ int show_minutes = 0;
 int show_hours = 1;
 int show_ending = 0;
 int show_skips = 0;
+int show_beginning = 1;
 
 while ((c = getopt (argc, argv, "meds")) != -1)
   switch (c) {
     case 'm': show_minutes = 1; break;
     case 'e': show_ending = 1; break;
-    case 'd': show_hours = 0; break;
+    case 'd': show_hours = 0; show_beginning = 0; break;
     case 's': show_skips = 1; break;
   }
 
@@ -285,7 +286,9 @@ while (access(strbuf, F_OK) < 0) {
   //return;
 }
 
-printf("--- BEGINNING RETROACTIVE LOGGING FOR %d/%d/%d ---\n", tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900);
+if(show_beginning) {
+  printf("--- BEGINNING RETROACTIVE LOGGING FOR %d/%d/%d ---\n", tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900);
+}
 
 if(show_hours) {
   printf("--- HOUR: 12 AM ---\n");
