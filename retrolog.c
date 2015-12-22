@@ -1,12 +1,9 @@
 #include <errno.h>
-#include <termios.h>
 #include <unistd.h>
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
-#include <termios.h>
 
 FILE* hours;
 FILE* minutes;
@@ -74,13 +71,32 @@ window24_total(float* array, int j) {
 void
 main(int argc, char** argv) {
 
-if(argc != 2 && argc != 3) {
+int c;
+int index;
+int show_minutes = 0;
+int show_hours = 1;
+int show_ending = 0;
+int show_skips = 0;
+
+while ((c = getopt (argc, argv, "meds")) != -1)
+  switch (c) {
+    case 'm': show_minutes = 1; break;
+    case 'e': show_ending = 1; break;
+    case 'd': show_hours = 0; break;
+    case 's': show_skips = 1; break;
+  }
+
+if(optind >= argc) {
   printf("USAGE: %s <start> [<end>]\n", argv[0]);
   printf("DATE FORMAT: YYYYMMDD\n");
+  printf("  -m   Display minutes data\n");
+  printf("  -e   Show ending after day\n");
+  printf("  -d   Only show data for day\n");
+  printf("  -s   Show skipped log files\n");
   return;
 }
 
-int dte = atoi(argv[1]);
+int dte = atoi(argv[optind]);
 retro_year = dte / 10000;
 retro_month = ( dte / 100 ) % 100;
 retro_day = dte % 100;
@@ -92,8 +108,8 @@ tm.tm_mon = retro_month - 1;
 tm.tm_mday = retro_day;
 
 struct tm tm_end = *localtime(&t);
-if(argc == 3) {
-  int dte2 = atoi(argv[2]);
+if(optind + 1 < argc) {
+  int dte2 = atoi(argv[optind + 1]);
   retro_year_end = dte2 / 10000;
   retro_month_end = ( dte2 / 100 ) % 100;
   retro_day_end = dte2 % 100;
@@ -240,7 +256,9 @@ while (tm.tm_yday < tm_end.tm_yday) {
 
 snprintf(strbuf, sizeof(strbuf), "data/%04d-%02d-%02d.minutes.dat", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
 while (access(strbuf, F_OK) < 0) {
-  printf("--- NO DATA FOR %d/%d/%d ---\n", tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900);
+  if(show_skips) {
+    printf("--- NO DATA FOR %d/%d/%d ---\n", tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900);
+  }
   //printf("Error loading logs...\n");
   time_t diff = difftime(mktime(&tm_end), mktime(&tm));
   //printf("%d", diff);
@@ -268,12 +286,16 @@ while (access(strbuf, F_OK) < 0) {
 }
 
 printf("--- BEGINNING RETROACTIVE LOGGING FOR %d/%d/%d ---\n", tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900);
-printf("--- HOUR: 12 AM ---\n");
+
+if(show_hours) {
+  printf("--- HOUR: 12 AM ---\n");
+}
 fflush(stdout);
 
 int current_day = tm.tm_mday;
 int current_hour = tm.tm_hour;
 float minute_seconds = 0;
+day_seconds = 0;
 
 //printf("Opening %s\n", strbuf);
 minutes = fopen(strbuf, "r");
@@ -345,11 +367,13 @@ while (!feof(minutes) || flushed == 0) {
     window24[23] = hour_seconds;
     day_seconds += hour_seconds;
 
+    if(show_hours) {
     printf("---TOTAL:[%2.2f] 4H:[TOTAL %3.2f / AVG %2.2f] 6H:[TOTAL %3.2f / AVG %2.2f]---\n", 
         minutes_v(hour_seconds),
         window24_total(window24, 4), window24_avg(window24, 4),
         window24_total(window24, 6), window24_avg(window24, 6)
     );
+    }
 
     fflush(stdout);
 
@@ -358,19 +382,27 @@ while (!feof(minutes) || flushed == 0) {
       tm_o.tm_mday = tm.tm_mday - 1;
       tm_o.tm_year = tm.tm_year;
       mktime(&tm_o);
-      printf("-- DAY TOTAL %02d-%02d-%04d: %4.2f AVG: %2.2f ---\n", tm_o.tm_mon + 1, tm_o.tm_mday, tm_o.tm_year + 1900, minutes_v(day_seconds), minutes_v(day_seconds) / (float) 24);
+      printf("---TOTAL:[%2.2f] 24H:[TOTAL %4.2f / AVG %3.2f] ---\n",
+        minutes_v(hour_seconds),
+        window24_total(window24, 24),
+        window24_avg(window24, 24)
+      );
+      //printf("-- DAY TOTAL %02d-%02d-%04d: %4.2f AVG: %2.2f ---\n", tm_o.tm_mon + 1, tm_o.tm_mday, tm_o.tm_year + 1900, minutes_v(day_seconds), minutes_v(day_seconds) / (float) 24);
       goto end_log;
     }
 
-    if(tm.tm_hour == 0) {
-      printf("--- HOUR: 12 AM ---\n");
-    } else if (tm.tm_hour == 12) {
-      printf("--- HOUR: 12 PM ---\n");
-    } else if (tm.tm_hour > 0 && tm.tm_hour < 12) {
-      printf("--- HOUR: %2d AM ---\n", tm.tm_hour);
-    } else if (tm.tm_hour > 12) {
-      printf("--- HOUR: %2d PM ---\n", tm.tm_hour - 12);
+    if(show_hours) {
+      if(tm.tm_hour == 0) {
+        printf("--- HOUR: 12 AM ---\n");
+      } else if (tm.tm_hour == 12) {
+        printf("--- HOUR: 12 PM ---\n");
+      } else if (tm.tm_hour > 0 && tm.tm_hour < 12) {
+        printf("--- HOUR: %2d AM ---\n", tm.tm_hour);
+      } else if (tm.tm_hour > 12) {
+        printf("--- HOUR: %2d PM ---\n", tm.tm_hour - 12);
+      }
     }
+
     fflush(stdout);
 
     current_day = tm.tm_mday;
@@ -383,24 +415,28 @@ while (!feof(minutes) || flushed == 0) {
     slide_window24(window24);
     window24[23] = hour_seconds;
 
+    if(show_hours) {
     printf("---TOTAL:[%2.2f] 4H:[TOTAL %3.2f / AVG %2.2f] 6H:[TOTAL %3.2f / AVG %2.2f]---\n", 
         minutes_v(hour_seconds),
         window24_total(window24, 4), window24_avg(window24, 4),
         window24_total(window24, 6), window24_avg(window24, 6)
     );
-
-    fflush(stdout);
-
-    if(tm.tm_hour == 0) {
-      printf("--- HOUR: 12 AM ---\n");
-    } else if (tm.tm_hour == 12) {
-      printf("--- HOUR: 12 PM ---\n");
-    } else if (tm.tm_hour > 0 && tm.tm_hour < 12) {
-      printf("--- HOUR: %2d AM ---\n", tm.tm_hour);
-    } else if (tm.tm_hour > 12) {
-      printf("--- HOUR: %2d PM ---\n", tm.tm_hour - 12);
     }
+
     fflush(stdout);
+
+    if(show_hours) {
+      if(tm.tm_hour == 0) {
+        printf("--- HOUR: 12 AM ---\n");
+      } else if (tm.tm_hour == 12) {
+        printf("--- HOUR: 12 PM ---\n");
+      } else if (tm.tm_hour > 0 && tm.tm_hour < 12) {
+        printf("--- HOUR: %2d AM ---\n", tm.tm_hour);
+      } else if (tm.tm_hour > 12) {
+        printf("--- HOUR: %2d PM ---\n", tm.tm_hour - 12);
+      }
+      fflush(stdout);
+    }
 
     day_seconds += hour_seconds;
     hour_seconds = 0;
@@ -412,27 +448,30 @@ while (!feof(minutes) || flushed == 0) {
   num_hour_minutes++;
   num_day_minutes++;
 
-  if(tm.tm_min % 20 == 0) {
-    printf("MIN %02d: ", tm.tm_min);
-  } else if(just_started == 1) {
-    printf("MIN %02d: ", (tm.tm_min / 20) * 20);
-    int m = tm.tm_min % 20;
-    while(m > 0) {
-      printf("-- ");
-      m--;
+  if(show_minutes) {
+    if(tm.tm_min % 20 == 0) {
+      printf("MIN %02d: ", tm.tm_min);
+    } else if(just_started == 1) {
+      printf("MIN %02d: ", (tm.tm_min / 20) * 20);
+      int m = tm.tm_min % 20;
+      while(m > 0) {
+        printf("-- ");
+        m--;
+      }
     }
+
+    if(!gap) {
+      printf("%02d ", (int) minute_seconds);
+    } else {
+      printf("-- ");
+    }
+
+    if(tm.tm_min % 20 == 19) {
+      printf("\n");
+    }
+    fflush(stdout);
   }
 
-  if(!gap) {
-    printf("%02d ", (int) minute_seconds);
-  } else {
-    printf("-- ");
-  }
-
-  if(tm.tm_min % 20 == 19) {
-    printf("\n");
-  }
-  fflush(stdout);
   just_started = 0;
 
   tm_p.tm_year = tm.tm_year;
@@ -458,7 +497,10 @@ tm_o.tm_mon = tm.tm_mon;
 tm_o.tm_mday = tm.tm_mday - 1;
 tm_o.tm_year = tm.tm_year;
 mktime(&tm_o);
-printf("--- ENDING RETROACTIVE LOGGING %d/%d/%d ---\n", tm_o.tm_mon + 1, tm_o.tm_mday, tm_o.tm_year + 1900);
+
+if(show_ending) {
+  printf("--- ENDING RETROACTIVE LOGGING %d/%d/%d ---\n", tm_o.tm_mon + 1, tm_o.tm_mday, tm_o.tm_year + 1900);
+}
 
 }
 
