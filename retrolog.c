@@ -74,16 +74,18 @@ main(int argc, char** argv) {
 int c;
 int index;
 int show_minutes = 0;
-int show_hours = 1;
+int show_hours = 0;
+int show_hours_compact = 1;
 int show_ending = 0;
 int show_skips = 0;
 int show_beginning = 1;
+char hours_field[6];
 
 while ((c = getopt (argc, argv, "meds")) != -1)
   switch (c) {
-    case 'm': show_minutes = 1; break;
+    case 'm': show_hours_compact = 0; show_hours = 1; show_minutes = 1; break;
     case 'e': show_ending = 1; break;
-    case 'd': show_hours = 0; show_beginning = 0; break;
+    case 'd': show_hours_compact = 0; show_hours = 0; show_beginning = 0; break;
     case 's': show_skips = 1; break;
   }
 
@@ -92,7 +94,7 @@ if(optind >= argc) {
   printf("DATE FORMAT: YYYYMMDD\n");
   printf("  -m   Display minutes data\n");
   printf("  -e   Show ending after day\n");
-  printf("  -d   Only show data for day\n");
+  printf("  -d   Only show data for day (hide hours and day beginning)\n");
   printf("  -s   Show skipped log files\n");
   return;
 }
@@ -290,8 +292,9 @@ if(show_beginning) {
   printf("--- BEGINNING RETROACTIVE LOGGING FOR %d/%d/%d ---\n", tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900);
 }
 
+sprintf(hours_field, "%02d %s", 12, "AM");
 if(show_hours) {
-  printf("--- HOUR: 12 AM ---\n");
+  printf("--- HOUR: %s ---\n", hours_field);
 }
 fflush(stdout);
 
@@ -322,6 +325,9 @@ while (!feof(minutes) || flushed == 0) {
     tm.tm_min = m;
     time_t diff = difftime(mktime(&tm), mktime(&tm_p));
     //printf("XXX NOGAP %d\n", diff);
+    if(diff == 0) {
+      continue;
+    }
     if(diff > 60) {
       if(diff % 60 == 0) {
         //printf("XXX TIME ABERRATION FOUND\n", tm.tm_mday, tm.tm_hour, tm.tm_min);
@@ -371,7 +377,16 @@ while (!feof(minutes) || flushed == 0) {
     day_seconds += hour_seconds;
 
     if(show_hours) {
-    printf("---TOTAL:[%2.2f] 4H:[TOTAL %3.2f / AVG %2.2f] 6H:[TOTAL %3.2f / AVG %2.2f]---\n", 
+    printf("---TOTAL:[%2.2f] 4H:[TOTAL %3.2f / AVG %2.2f] 6H:[TOTAL %3.2f / AVG %2.2f]---\n",
+        minutes_v(hour_seconds),
+        window24_total(window24, 4), window24_avg(window24, 4),
+        window24_total(window24, 6), window24_avg(window24, 6)
+    );
+    }
+
+    if(show_hours_compact) {
+    printf("---%s:[%2.2f] 4H:[TOTAL %3.2f / AVG %2.2f] 6H:[TOTAL %3.2f / AVG %2.2f]---\n",
+        hours_field,
         minutes_v(hour_seconds),
         window24_total(window24, 4), window24_avg(window24, 4),
         window24_total(window24, 6), window24_avg(window24, 6)
@@ -397,16 +412,18 @@ while (!feof(minutes) || flushed == 0) {
       goto end_log;
     }
 
+    if(tm.tm_hour == 0) {
+      sprintf(hours_field, "%02d %s", 12, "AM");
+    } else if (tm.tm_hour == 12) {
+      sprintf(hours_field, "%02d %s", 12, "PM");
+    } else if (tm.tm_hour > 0 && tm.tm_hour < 12) {
+      sprintf(hours_field, "%02d %s", tm.tm_hour, "AM");
+    } else if (tm.tm_hour > 12) {
+      sprintf(hours_field, "%02d %s", tm.tm_hour - 12, "PM");
+    }
+
     if(show_hours) {
-      if(tm.tm_hour == 0) {
-        printf("--- HOUR: 12 AM ---\n");
-      } else if (tm.tm_hour == 12) {
-        printf("--- HOUR: 12 PM ---\n");
-      } else if (tm.tm_hour > 0 && tm.tm_hour < 12) {
-        printf("--- HOUR: %2d AM ---\n", tm.tm_hour);
-      } else if (tm.tm_hour > 12) {
-        printf("--- HOUR: %2d PM ---\n", tm.tm_hour - 12);
-      }
+      printf("--- HOUR: %s ---\n", hours_field);
     }
 
     fflush(stdout);
@@ -429,18 +446,29 @@ while (!feof(minutes) || flushed == 0) {
     );
     }
 
+    if(show_hours_compact) {
+    printf("---%s:[%2.2f] 4H:[TOTAL %3.2f / AVG %2.2f] 6H:[TOTAL %3.2f / AVG %2.2f]---\n", 
+        hours_field,
+        minutes_v(hour_seconds),
+        window24_total(window24, 4), window24_avg(window24, 4),
+        window24_total(window24, 6), window24_avg(window24, 6)
+    );
+    }
+
     fflush(stdout);
 
+    if(tm.tm_hour == 0) {
+      sprintf(hours_field, "%02d %s", 12, "AM");
+    } else if (tm.tm_hour == 12) {
+      sprintf(hours_field, "%02d %s", 12, "PM");
+    } else if (tm.tm_hour > 0 && tm.tm_hour < 12) {
+      sprintf(hours_field, "%02d %s", tm.tm_hour, "AM");
+    } else if (tm.tm_hour > 12) {
+      sprintf(hours_field, "%02d %s", tm.tm_hour - 12, "PM");
+    }
+
     if(show_hours) {
-      if(tm.tm_hour == 0) {
-        printf("--- HOUR: 12 AM ---\n");
-      } else if (tm.tm_hour == 12) {
-        printf("--- HOUR: 12 PM ---\n");
-      } else if (tm.tm_hour > 0 && tm.tm_hour < 12) {
-        printf("--- HOUR: %2d AM ---\n", tm.tm_hour);
-      } else if (tm.tm_hour > 12) {
-        printf("--- HOUR: %2d PM ---\n", tm.tm_hour - 12);
-      }
+      printf("--- HOUR: %s ---\n", hours_field);
       fflush(stdout);
     }
 
@@ -488,10 +516,17 @@ while (!feof(minutes) || flushed == 0) {
 
 }
 
-printf("\n");
+if(show_minutes) {
+  printf("\n");
+}
 end_log:
+
 if(tm.tm_hour != 0 || tm.tm_min != 0) {   // Add a whole day if the file is done without hitting the
   //printf("Incomplete previous day. %d %d %d\n", tm.tm_hour, tm.tm_min);
+  printf("-- DAY TOTAL %02d-%02d-%04d: %4.2f AVG: %2.2f --- INCOMPLETE\n", tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900,
+    window24_total(window24, 24),
+    window24_avg(window24, 24)
+  );
   tm.tm_hour = 0;// end of the day. Reset all the time counters to 0
   tm.tm_min = 0;
   tm.tm_sec = 0;
